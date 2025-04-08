@@ -13,8 +13,9 @@ Supports secure credential handling via .env
 ---
 
 # 🛠️ Requirements
-Bash (Linux/macOS)
-MySQL client tools with sudo privileges
+* Bash (Linux/macOS)
+* MySQL client tools with sudo privileges
+* .env file
 
 ---
 
@@ -22,10 +23,11 @@ MySQL client tools with sudo privileges
 You can store environment variables in a .env file in the script directory:
 ```bash
 # Example .env
-DB_USER=root
-DB_PASS=yourpassword
+DB_USER="user"
+DB_PASSWORD="yourpassword"
+DB_HOST="host"
+DB_PORT="port_no"
 ```
-**Note**: The script primarily uses the --login-path=shuffle_script method for MySQL authentication.
 
 ---
 

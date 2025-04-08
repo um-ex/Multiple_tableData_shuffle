@@ -28,7 +28,7 @@ mysql_command() {
 # Validate MySQL connection
 check_mysql_connection() {
     if ! mysql_command "" "SELECT 1"; then
-        echo "❌ MySQL connection failed. Check your .env credentials and MySQL status."
+        echo "MySQL connection failed. Check your .env credentials and MySQL status."
         exit 1
     fi
 }
@@ -37,7 +37,7 @@ check_mysql_connection() {
 check_database() {
     local db=$1
     if ! mysql_command "$db" "SELECT 1"; then
-        echo "❌ Database '$db' not found or access denied"
+        echo "Database '$db' not found or access denied"
         exit 1
     fi
 }
@@ -46,19 +46,19 @@ check_database() {
 validate_table() {
     local db=$1 table=$2 id_col=$3 columns=$4
 
-    echo "🔍 Validating structure for table '$table'..."
+    echo "Validating structure for table '$table'..."
 
     # Check if the table exists
     if ! sudo mysql -u "$DB_USER" -p"$DB_PASSWORD" -h "$DB_HOST" -P "$DB_PORT" "$db" \
         -e "DESCRIBE $table" >/dev/null 2>&1; then
-        echo "❌ Table '$table' does not exist"
+        echo "Table '$table' does not exist"
         return 1
     fi
 
     # Check if ID column exists
     if ! sudo mysql -u "$DB_USER" -p"$DB_PASSWORD" -h "$DB_HOST" -P "$DB_PORT" "$db" --silent --skip-column-names \
         -e "DESCRIBE $table" | awk '{print $1}' | grep -qw "$id_col"; then
-        echo "❌ ID column '$id_col' not found in table '$table'"
+        echo "ID column '$id_col' not found in table '$table'"
         return 1
     fi
 
@@ -67,7 +67,7 @@ validate_table() {
     for col in "${col_array[@]}"; do
         if ! sudo mysql -u "$DB_USER" -p"$DB_PASSWORD" -h "$DB_HOST" -P "$DB_PORT" "$db" --silent --skip-column-names \
             -e "DESCRIBE $table" | awk '{print $1}' | grep -qw "$col"; then
-            echo "❌ Column '$col' not found in table '$table'"
+            echo "Column '$col' not found in table '$table'"
             return 1
         fi
     done
@@ -78,7 +78,7 @@ validate_table() {
 # Shuffle table data
 shuffle_table() {
     local db=$1 table=$2 id_col=$3 columns=$4
-    echo "🔄 Shuffling '$table' (ID: $id_col, Columns: ${columns//,/ })"
+    echo "Shuffling '$table' (ID: $id_col, Columns: ${columns//,/ })"
 
     local rand_table="_shuffle_${table}_$RANDOM"
 
@@ -119,11 +119,11 @@ EOF
 )
 
     if ! mysql_command "$db" "$sql"; then
-        echo "❌ Shuffle failed for '$table'"
+        echo "Shuffle failed for '$table'"
         return 1
     fi
 
-    echo "✅ Successfully shuffled '$table'"
+    echo "Successfully shuffled '$table'"
 }
 
 # Main logic
