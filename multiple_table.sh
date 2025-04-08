@@ -62,57 +62,69 @@ validate_table() {
         done
     done <<< "$columns"
 }
-# Update the SQL block in shuffle_table() with:
 shuffle_table() {
-    local db=$1 table=$2 id_col=$3 columns=$4
-    
-    echo "🔄 Shuffling $table (ID: $id_col, Columns: ${columns//,/ })"
-    
-    local rand_table="_shuffle_${table}_$RANDOM"
-    local col_list="${id_col},${columns}"
+    local db=$1
+    local table=$2
+    local id_col=$3
+    local columns=$4
 
-local sql=$(cat <<EOF
+    echo "🔄 Shuffling $table (ID: $id_col, Columns: ${columns//,/ })"
+
+    local rand_table="_shuffle_${table}_$RANDOM"
+
+    # Build SET clause dynamically
+    local set_clause=""
+    IFS=',' read -ra col_array <<< "$columns"
+    for col in "${col_array[@]}"; do
+        set_clause+="original.${col} = shuffled.${col}, "
+    done
+    set_clause=${set_clause%, }  # Remove trailing comma and space
+
+    # SQL block
+    local sql=$(cat <<EOF
 SET SESSION bulk_insert_buffer_size = 268435456;
 SET SESSION unique_checks = OFF;
 SET SESSION foreign_key_checks = OFF;
 
 -- Create shuffled data WITHOUT ID
-CREATE TEMPORARY TABLE $rand_table AS 
-SELECT ${columns//,/,,}  -- Only columns to shuffle
-FROM $table 
+CREATE TEMPORARY TABLE $rand_table AS
+SELECT ${columns}
+FROM $table
 ORDER BY RAND();
 
 -- Assign row numbers to original and shuffled data
 SET @row_num = 0;
 UPDATE $table AS original
 JOIN (
-    SELECT *, @row_num := @row_num + 1 AS rn 
+    SELECT *, @row_num := @row_num + 1 AS rn
     FROM $table
 ) AS orig_order USING ($id_col)
 JOIN (
-    SELECT *, @row_shuffle := @row_shuffle + 1 AS rn 
+    SELECT *, @row_shuffle := @row_shuffle + 1 AS rn
     FROM $rand_table
     CROSS JOIN (SELECT @row_shuffle := 0) AS vars
-) AS shuffled 
+) AS shuffled
 ON orig_order.rn = shuffled.rn
-SET 
-$(IFS=','; for col in ${columns//,/ }; do echo "original.$col = shuffled.$col,"; done | sed '$ s/,$//');
+SET
+$set_clause;
 
 DROP TEMPORARY TABLE $rand_table;
 EOF
 )
 
-
-
     # Execute the query
-    
     if ! sudo mysql --login-path=shuffle_script -D "$db" -vv -e "$sql" 2> >(grep -v "Using a password"); then
         echo "❌ Shuffle failed for $table"
         return 1
     fi
-    
+
     echo "✅ Successfully shuffled $table"
 }
+
+
+
+
+# Update the SQL block in shuffle_table() with:
 # Main shuffle function
 # --------------------------
 # Execution Flow
