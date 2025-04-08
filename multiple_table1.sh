@@ -147,7 +147,7 @@ main() {
         if validate_table "$db" "$table" "$id_col" "$columns"; then
             shuffle_table "$db" "$table" "$id_col" "$columns"
         else
-            echo "⚠️ Skipping '$table' due to validation errors"
+            echo "Skipping '$table' due to validation errors"
         fi
     done
 }
